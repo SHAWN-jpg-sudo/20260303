@@ -1,0 +1,65 @@
+#include <iostream>
+#include <queue>
+using namespace std;
+
+// 顯示 queue 內容的函式
+void showQueue(queue<int> q) {
+    if (q.empty()) {
+        cout << "Queue 是空的" << endl;
+        return;
+    }
+
+    cout << "目前 Queue 內容: ";
+
+    // 用複製的 queue 來輸出
+    while (!q.empty()) {
+        cout << q.front() << " ";
+        q.pop();
+    }
+    cout << endl;
+}
+
+int main() {
+    queue<int> q;
+    int choice, value;
+
+    while (true) {
+        cout << "\n請選擇操作：" << endl;
+        cout << "1 → Enqueue (加入)" << endl;
+        cout << "2 → Dequeue (移除)" << endl;
+        cout << "0 → 結束" << endl;
+        cout << "輸入: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            cout << "請輸入要加入的數字: ";
+            cin >> value;
+            q.push(value);
+            cout << "已加入: " << value << endl;
+
+        } else if (choice == 2) {
+            if (q.empty()) {
+                cout << "Queue 是空的，無法移除" << endl;
+            } else {
+                cout << "移除: " << q.front() << endl;
+                q.pop();
+            }
+
+        } else if (choice == 0) {
+            cout << "程式結束" << endl;
+            break;
+
+        } else {
+            cout << "輸入錯誤，請重新輸入" << endl;
+        }
+
+        // 每次操作後顯示 queue
+        showQueue(q);
+    }
+	
+	cout<<"O(5) + O(5) = O(10)"<<endl;
+	cout<<"O(1)";
+	
+	
+    return 0;
+}
