@@ -1,0 +1,113 @@
+public class Main {
+
+    
+    public static class Student {
+        String name;
+        int score;
+
+        Student(String name, int score) {
+            this.name = name;
+            this.score = score;
+        }
+    }
+
+    // 2. 找最大值
+    public static int findMax(int[] arr) {
+        int max = arr[0];
+        for (int n : arr) {
+            if (n > max) {
+                max = n;
+            }
+        }
+        return max;
+    }
+
+    // 3. 每個元素加 5 分
+    public static void addBonus(int[] scores) {
+        for (int i = 0; i < scores.length; i++) {
+            scores[i] += 5;
+        }
+    }
+
+    // 5. 分數低於 60 加 10 分
+    public static void curve(Student s) {
+        if (s.score < 60) {
+            s.score += 10;
+        }
+    }
+
+    // 7. 總和
+    public static int sum(int[] arr) {
+        int total = 0;
+        for (int n : arr) {
+            total += n;
+        }
+        return total;
+    }
+
+    // 9. 更新分數
+    public static void updateScore(Student s, int newScore) {
+        s.score = newScore;
+    }
+
+    public static void main(String[] args) {
+
+        // 1. 平均分數
+        int[] scores = {70, 80, 90};
+        double avg = (double) sum(scores) / scores.length;
+        System.out.println("平均分數: " + avg);
+
+        // 2. 最大值
+        System.out.println("最大值: " + findMax(scores));
+
+        // 3. 加分
+        addBonus(scores);
+        System.out.print("加 5 分後: ");
+        for (int s : scores) {
+            System.out.print(s + " ");
+        }
+        System.out.println();
+
+        // 4. 建立 Tom
+        Student tom = new Student("Tom", 85);
+        System.out.println(tom.name + ": " + tom.score);
+
+        // 5. curve 測試
+        Student john = new Student("John", 55);
+        curve(john);
+        System.out.println(john.name + ": " + john.score);
+
+        // 6. 計算 >=60 人數
+        int count = 0;
+        for (int s : scores) {
+            if (s >= 60) {
+                count++;
+            }
+        }
+        System.out.println("及格人數: " + count);
+
+        // 8. Student 陣列
+        Student[] students = {
+            new Student("Amy", 75),
+            new Student("Bob", 50),
+            new Student("Cindy", 95)
+        };
+
+        for (Student s : students) {
+            System.out.println(s.name + ": " + s.score);
+        }
+
+        // 9. 更新分數
+        updateScore(students[1], 65);
+        System.out.println("更新後 Bob: " + students[1].score);
+
+        // 10. 最小值
+        int min = scores[0];
+        for (int n : scores) {
+            if (n < min) {
+                min = n;
+            }
+        }
+        System.out.println("最小值: " + min);
+    }
+}
