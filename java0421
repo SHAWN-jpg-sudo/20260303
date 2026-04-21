@@ -1,0 +1,113 @@
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
+
+public class Assignment0421 {
+
+    public static void main(String[] args) throws Exception {
+
+        String inputPath = "C:/Users/User/Desktop/0421/input.jpg";
+        String outputPath = "C:/Users/User/Desktop/0421/edge_detected.jpg";
+
+        // 檢查輸入檔案是否存在
+        File inputFile = new File(inputPath);
+        if (!inputFile.exists()) {
+            System.err.println("❌ 錯誤：輸入檔案不存在 - " + inputPath);
+            return;
+        }
+
+        try {
+            BufferedImage original = ImageIO.read(inputFile);
+            
+            if (original == null) {
+                System.err.println("❌ 錯誤：無法讀取圖像 - 檔案可能損壞");
+                return;
+            }
+
+        int width = original.getWidth();
+        int height = original.getHeight();
+
+        // ===== 1️⃣ 灰階轉換 =====
+        int[][] gray = new int[height][width];
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+
+                int rgb = original.getRGB(x, y);
+
+                int r = (rgb >> 16) & 0xff;
+                int g = (rgb >> 8) & 0xff;
+                int b = rgb & 0xff;
+
+                // 灰階計算
+                gray[y][x] = (r + g + b) / 3;
+            }
+        }
+
+        // ===== 2️⃣ 使用 Sobel 運算子計算 I_x 和 I_y =====
+        int[][] Ix = new int[height][width];
+        int[][] Iy = new int[height][width];
+
+        for (int y = 1; y < height - 1; y++) {
+            for (int x = 1; x < width - 1; x++) {
+
+                // Sobel X 運算子: 1/4 * [1 0 -1; 2 0 -2; 1 0 -1]
+                int sobelX = gray[y-1][x-1] * 1 + gray[y][x-1] * 2 + gray[y+1][x-1] * 1
+                           - gray[y-1][x+1] * 1 - gray[y][x+1] * 2 - gray[y+1][x+1] * 1;
+                Ix[y][x] = sobelX / 4;
+
+                // Sobel Y 運算子: 1/4 * [1 2 1; 0 0 0; -1 -2 -1]
+                int sobelY = gray[y-1][x-1] * 1 + gray[y-1][x] * 2 + gray[y-1][x+1] * 1
+                           - gray[y+1][x-1] * 1 - gray[y+1][x] * 2 - gray[y+1][x+1] * 1;
+                Iy[y][x] = sobelY / 4;
+            }
+        }
+
+        // ===== 3️⃣ 計算邊緣強度（梯度大小）=====
+        int[][] magnitude = new int[height][width];
+        int maxVal = 0;
+
+        for (int y = 1; y < height - 1; y++) {
+            for (int x = 1; x < width - 1; x++) {
+
+                // 邊緣強度 = sqrt(I_x^2 + I_y^2)，為簡化用 |I_x| + |I_y|
+                int mag = Math.abs(Ix[y][x]) + Math.abs(Iy[y][x]);
+
+                magnitude[y][x] = mag;
+
+                if (mag > maxVal) {
+                    maxVal = mag;
+                }
+            }
+        }
+
+        // ===== 4️⃣ 正規化到 0~255 =====
+        BufferedImage output = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+
+                int v = magnitude[y][x];
+
+                // 正規化到 0~255
+                if (maxVal != 0) {
+                    v = v * 255 / maxVal;
+                }
+
+                int rgb = (v << 16) | (v << 8) | v;
+                output.setRGB(x, y, rgb);
+            }
+        }
+
+        ImageIO.write(output, "jpg", new File(outputPath));
+
+        System.out.println("✅ 邊緣檢測完成！");
+        System.out.println("📁 輸出路徑：" + outputPath);
+        System.out.println("📊 最大邊緣強度：" + maxVal);
+        
+        } catch (Exception e) {
+            System.err.println("❌ 執行出錯：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
