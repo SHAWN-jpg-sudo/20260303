@@ -1,0 +1,514 @@
+import java.util.Random;
+
+public class j0428 {
+    public static void main(String[] args) {
+        System.out.println("=== 機率概念展示 ===\n");
+
+        // 1. 機率的定義
+        ProbabilityDefinition def = new ProbabilityDefinition();
+        System.out.println("1. " + def.getTitle());
+        System.out.println(def);
+        System.out.println();
+
+        // 2. 樣本空間（Sample Space）
+        SampleSpace ss = SampleSpace.createRandomExample();
+        System.out.println("2. " + ss.getTitle());
+        System.out.println(ss);
+        System.out.println();
+
+        // 3. 事件（Event）
+        Event event = Event.createRandomExample();
+        System.out.println("3. " + event.getTitle());
+        System.out.println(event);
+        System.out.println();
+
+        // 4. 基本公式
+        BasicFormula bf = BasicFormula.createRandomExample();
+        System.out.println("4. " + bf.getTitle());
+        System.out.println(bf);
+        System.out.println();
+
+        // 5. 補事件
+        ComplementEvent ce = ComplementEvent.createRandomExample();
+        System.out.println("5. " + ce.getTitle());
+        System.out.println(ce);
+        System.out.println();
+
+        // 6. 聯集（OR）
+        ProbabilityUnion pu = ProbabilityUnion.createRandomExample();
+        System.out.println("6. " + pu.getTitle());
+        System.out.println(pu);
+        System.out.println();
+
+        // 7. 交集（AND）
+        ProbabilityIntersection pi = ProbabilityIntersection.createRandomExample();
+        System.out.println("7. " + pi.getTitle());
+        System.out.println(pi);
+        System.out.println();
+
+        // 8. 條件機率
+        ConditionalProbability cp = ConditionalProbability.createRandomExample();
+        System.out.println("8. " + cp.getTitle());
+        System.out.println(cp);
+        System.out.println();
+
+        // 9. 獨立事件
+        IndependentEvents ie = IndependentEvents.createRandomExample();
+        System.out.println("9. " + ie.getTitle());
+        System.out.println(ie);
+        System.out.println();
+
+        // 10. 貝氏定理
+        BayesTheorem bt = BayesTheorem.createRandomExample();
+        System.out.println("10. " + bt.getTitle());
+        System.out.println(bt);
+        System.out.println();
+
+        // 11. 全機率公式
+        TotalProbabilityFormula tpf = TotalProbabilityFormula.createRandomExample();
+        System.out.println("11. " + tpf.getTitle());
+        System.out.println(tpf);
+        System.out.println();
+
+        // 12. 學校例子
+        Random random = new Random();
+        int N = 50 + random.nextInt(50); // 50-100
+        int J = 10 + random.nextInt(N / 2); // 10 to N/2
+        int B = 10 + random.nextInt(N - J); // 10 to N-J
+        SchoolExample se = new SchoolExample(J, B, N);
+        System.out.println("12. " + se.getTitle());
+        System.out.println(se);
+        System.out.println();
+
+        // 13. 建中或北一女
+        UnionExample ue = new UnionExample(J, B, N);
+        System.out.println("13. " + ue.getTitle());
+        System.out.println(ue);
+        System.out.println();
+    }
+}
+
+/**
+ * 機率的定義
+ */
+class ProbabilityDefinition {
+    public String getTitle() {
+        return "機率的定義";
+    }
+
+    @Override
+    public String toString() {
+        return "機率表示某件事情發生的可能性。\n" +
+               "公式：P(A) = 事件A發生的個數 / 全部可能情況\n" +
+               "例如：擲骰子出現6點的機率 = 1/6 ≈ 0.17";
+    }
+}
+
+/**
+ * 樣本空間（Sample Space）
+ */
+class SampleSpace {
+    private final int totalOutcomes;
+    private final int favorableOutcomes;
+
+    public SampleSpace(int totalOutcomes, int favorableOutcomes) {
+        this.totalOutcomes = totalOutcomes;
+        this.favorableOutcomes = favorableOutcomes;
+    }
+
+    public static SampleSpace createRandomExample() {
+        Random random = new Random();
+        int total = 10 + random.nextInt(20); // 10-30
+        int favorable = 1 + random.nextInt(total);
+        return new SampleSpace(total, favorable);
+    }
+
+    public String getTitle() {
+        return "樣本空間（Sample Space）";
+    }
+
+    @Override
+    public String toString() {
+        return "樣本空間 S：所有可能結果的集合。\n" +
+               "例如：樣本空間大小 = " + totalOutcomes + "\n" +
+               "有利結果數 = " + favorableOutcomes + "\n" +
+               "機率 P(A) = " + favorableOutcomes + "/" + totalOutcomes + " ≈ " + String.format("%.2f", (double)favorableOutcomes/totalOutcomes);
+    }
+}
+
+/**
+ * 事件（Event）
+ */
+class Event {
+    private final double probability;
+
+    public Event(double probability) {
+        this.probability = probability;
+    }
+
+    public static Event createRandomExample() {
+        Random random = new Random();
+        double p = 0.1 + random.nextDouble() * 0.8;
+        return new Event(p);
+    }
+
+    public String getTitle() {
+        return "事件（Event）";
+    }
+
+    @Override
+    public String toString() {
+        return "事件 A：我們關心的事件。\n" +
+               "例如：抽到特定結果的機率 P(A) = " + String.format("%.2f", probability);
+    }
+}
+
+/**
+ * 基本公式
+ */
+class BasicFormula {
+    private final int nA;
+    private final int nS;
+
+    public BasicFormula(int nA, int nS) {
+        this.nA = nA;
+        this.nS = nS;
+    }
+
+    public static BasicFormula createRandomExample() {
+        Random random = new Random();
+        int ns = 10 + random.nextInt(20);
+        int na = 1 + random.nextInt(ns);
+        return new BasicFormula(na, ns);
+    }
+
+    public String getTitle() {
+        return "基本公式";
+    }
+
+    @Override
+    public String toString() {
+        double p = (double)nA / nS;
+        return "基本公式：P(A) = n(A)/n(S)\n" +
+               "例如：n(A) = " + nA + ", n(S) = " + nS + "\n" +
+               "P(A) = " + nA + "/" + nS + " ≈ " + String.format("%.2f", p);
+    }
+}
+
+/**
+ * 補事件
+ */
+class ComplementEvent {
+    private final double pA;
+
+    public ComplementEvent(double pA) {
+        this.pA = pA;
+    }
+
+    public static ComplementEvent createRandomExample() {
+        Random random = new Random();
+        double p = 0.1 + random.nextDouble() * 0.8;
+        return new ComplementEvent(p);
+    }
+
+    public String getTitle() {
+        return "補事件";
+    }
+
+    @Override
+    public String toString() {
+        double pAc = 1 - pA;
+        return "補事件：P(A^c) = 1 - P(A)\n" +
+               "例如：不是特定事件的機率\n" +
+               "P(A) = " + String.format("%.2f", pA) + "\n" +
+               "P(A^c) = 1 - " + String.format("%.2f", pA) + " = " + String.format("%.2f", pAc);
+    }
+}
+
+/**
+ * 聯集（OR）
+ */
+class ProbabilityUnion {
+    private final double pA;
+    private final double pB;
+    private final double pAandB;
+
+    public ProbabilityUnion(double pA, double pB, double pAandB) {
+        this.pA = pA;
+        this.pB = pB;
+        this.pAandB = pAandB;
+    }
+
+    public static ProbabilityUnion createRandomExample() {
+        Random random = new Random();
+        double pA = 0.1 + random.nextDouble() * 0.8;
+        double pB = 0.1 + random.nextDouble() * 0.8;
+        double pAandB = random.nextDouble() * Math.min(pA, pB);
+        return new ProbabilityUnion(pA, pB, pAandB);
+    }
+
+    public double getPUnion() {
+        return pA + pB - pAandB;
+    }
+
+    public String getTitle() {
+        return "聯集（OR）";
+    }
+
+    @Override
+    public String toString() {
+        return "聯集：P(A∪B) = P(A) + P(B) - P(A∩B)\n" +
+               "若互斥：P(A∪B) = P(A) + P(B)\n" +
+               "P(A)=" + String.format("%.2f", pA) + "\n" +
+               "P(B)=" + String.format("%.2f", pB) + "\n" +
+               "P(A∩B)=" + String.format("%.2f", pAandB) + "\n" +
+               "P(A∪B)=" + String.format("%.2f", getPUnion());
+    }
+}
+
+/**
+ * 交集（AND）
+ */
+class ProbabilityIntersection {
+    private final double pA;
+    private final double pBgivenA;
+
+    public ProbabilityIntersection(double pA, double pBgivenA) {
+        this.pA = pA;
+        this.pBgivenA = pBgivenA;
+    }
+
+    public static ProbabilityIntersection createRandomExample() {
+        Random random = new Random();
+        double pA = 0.1 + random.nextDouble() * 0.8;
+        double pBgivenA = random.nextDouble();
+        return new ProbabilityIntersection(pA, pBgivenA);
+    }
+
+    public double getPIntersection() {
+        return pA * pBgivenA;
+    }
+
+    public String getTitle() {
+        return "交集（AND）";
+    }
+
+    @Override
+    public String toString() {
+        return "交集：P(A∩B) = P(A)P(B|A)\n" +
+               "也可寫成 P(B)P(A|B)\n" +
+               "P(A)=" + String.format("%.2f", pA) + "\n" +
+               "P(B|A)=" + String.format("%.2f", pBgivenA) + "\n" +
+               "P(A∩B)=" + String.format("%.2f", getPIntersection());
+    }
+}
+
+/**
+ * 條件機率
+ */
+class ConditionalProbability {
+    private final double pAandB;
+    private final double pB;
+
+    public ConditionalProbability(double pAandB, double pB) {
+        this.pAandB = pAandB;
+        this.pB = pB;
+    }
+
+    public static ConditionalProbability createRandomExample() {
+        Random random = new Random();
+        double pB = 0.1 + random.nextDouble() * 0.8;
+        double pAandB = random.nextDouble() * pB;
+        return new ConditionalProbability(pAandB, pB);
+    }
+
+    public double getPConditional() {
+        return pAandB / pB;
+    }
+
+    public String getTitle() {
+        return "條件機率";
+    }
+
+    @Override
+    public String toString() {
+        return "條件機率：P(A|B) = P(A∩B)/P(B)\n" +
+               "意思：已知B發生，A的機率\n" +
+               "P(A∩B)=" + String.format("%.2f", pAandB) + "\n" +
+               "P(B)=" + String.format("%.2f", pB) + "\n" +
+               "P(A|B)=" + String.format("%.2f", getPConditional());
+    }
+}
+
+/**
+ * 獨立事件
+ */
+class IndependentEvents {
+    private final double pA;
+    private final double pB;
+
+    public IndependentEvents(double pA, double pB) {
+        this.pA = pA;
+        this.pB = pB;
+    }
+
+    public static IndependentEvents createRandomExample() {
+        Random random = new Random();
+        double pA = 0.1 + random.nextDouble() * 0.8;
+        double pB = 0.1 + random.nextDouble() * 0.8;
+        return new IndependentEvents(pA, pB);
+    }
+
+    public double getPIntersection() {
+        return pA * pB;
+    }
+
+    public String getTitle() {
+        return "獨立事件";
+    }
+
+    @Override
+    public String toString() {
+        return "獨立事件：P(A∩B) = P(A)P(B)\n" +
+               "P(A)=" + String.format("%.2f", pA) + "\n" +
+               "P(B)=" + String.format("%.2f", pB) + "\n" +
+               "P(A∩B)=" + String.format("%.2f", getPIntersection());
+    }
+}
+
+/**
+ * 貝氏定理
+ */
+class BayesTheorem {
+    private final double pA;
+    private final double pBgivenA;
+    private final double pB;
+
+    public BayesTheorem(double pA, double pBgivenA, double pB) {
+        this.pA = pA;
+        this.pBgivenA = pBgivenA;
+        this.pB = pB;
+    }
+
+    public static BayesTheorem createRandomExample() {
+        Random random = new Random();
+        double pA = 0.1 + random.nextDouble() * 0.8;
+        double pBgivenA = 0.1 + random.nextDouble() * 0.8;
+        double pB = 0.1 + random.nextDouble() * 0.8;
+        return new BayesTheorem(pA, pBgivenA, pB);
+    }
+
+    public double getPAgivenB() {
+        return (pBgivenA * pA) / pB;
+    }
+
+    public String getTitle() {
+        return "貝氏定理";
+    }
+
+    @Override
+    public String toString() {
+        return "貝氏定理：P(A|B) = P(B|A)P(A) / P(B)\n" +
+               "用途：已知結果，反推原因\n" +
+               "P(A)=" + String.format("%.2f", pA) + "\n" +
+               "P(B|A)=" + String.format("%.2f", pBgivenA) + "\n" +
+               "P(B)=" + String.format("%.2f", pB) + "\n" +
+               "P(A|B)=" + String.format("%.2f", getPAgivenB());
+    }
+}
+
+/**
+ * 全機率公式
+ */
+class TotalProbabilityFormula {
+    private final double pA1;
+    private final double pA2;
+    private final double pBgivenA1;
+    private final double pBgivenA2;
+
+    public TotalProbabilityFormula(double pA1, double pA2, double pBgivenA1, double pBgivenA2) {
+        this.pA1 = pA1;
+        this.pA2 = pA2;
+        this.pBgivenA1 = pBgivenA1;
+        this.pBgivenA2 = pBgivenA2;
+    }
+
+    public static TotalProbabilityFormula createRandomExample() {
+        Random random = new Random();
+        double pA1 = 0.1 + random.nextDouble() * 0.4;
+        double pA2 = 1 - pA1;
+        double pBgivenA1 = random.nextDouble();
+        double pBgivenA2 = random.nextDouble();
+        return new TotalProbabilityFormula(pA1, pA2, pBgivenA1, pBgivenA2);
+    }
+
+    public double getPB() {
+        return pA1 * pBgivenA1 + pA2 * pBgivenA2;
+    }
+
+    public String getTitle() {
+        return "全機率公式";
+    }
+
+    @Override
+    public String toString() {
+        return "全機率公式：P(B) = Σ P(B|Ai)P(Ai)\n" +
+               "P(A1)=" + String.format("%.2f", pA1) + "\n" +
+               "P(A2)=" + String.format("%.2f", pA2) + "\n" +
+               "P(B|A1)=" + String.format("%.2f", pBgivenA1) + "\n" +
+               "P(B|A2)=" + String.format("%.2f", pBgivenA2) + "\n" +
+               "P(B)=" + String.format("%.2f", getPB());
+    }
+}
+
+/**
+ * 學校例子
+ */
+class SchoolExample {
+    private final int J;
+    private final int B;
+    private final int N;
+
+    public SchoolExample(int J, int B, int N) {
+        this.J = J;
+        this.B = B;
+        this.N = N;
+    }
+
+    public String getTitle() {
+        return "學校例子";
+    }
+
+    @Override
+    public String toString() {
+        return "交大中：建中 " + J + " 人，北一女 " + B + " 人，總人數 " + N + "\n" +
+               "P(建中)=" + J + "/" + N + " ≈ " + String.format("%.2f", (double)J / N) + "\n" +
+               "P(北一女)=" + B + "/" + N + " ≈ " + String.format("%.2f", (double)B / N);
+    }
+}
+
+/**
+ * 建中或北一女
+ */
+class UnionExample {
+    private final int J;
+    private final int B;
+    private final int N;
+
+    public UnionExample(int J, int B, int N) {
+        this.J = J;
+        this.B = B;
+        this.N = N;
+    }
+
+    public String getTitle() {
+        return "建中或北一女";
+    }
+
+    @Override
+    public String toString() {
+        int union = J + B;
+        return "P(建中∪北一女)= (" + J + "+" + B + ")/" + N + " = " + union + "/" + N + " ≈ " + String.format("%.2f", (double)union / N) + "\n" ;
+               
+    }
+}
