@@ -1,0 +1,347 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.Timer;
+
+public class AirplaneGame extends JPanel implements ActionListener, KeyListener, MouseListener {
+
+    private final int TILE_SIZE = 40, ROWS = 15, COLS = 15;
+    private final int WIDTH = COLS * TILE_SIZE, HEIGHT = ROWS * TILE_SIZE;
+
+    private Timer timer;
+    private int[][] map; 
+    private Player player;
+    private List<Enemy> enemies = new ArrayList<>();
+    private List<Bullet> playerBullets = new ArrayList<>();
+    private List<EnemyBullet> enemyBullets = new ArrayList<>();
+    private List<DeathEffect> effects = new ArrayList<>(); // 特效清單
+
+    private int score = 0, wave = 1, level = 1, waveTimerCounter = 0;
+    private final int NEXT_WAVE_TIME = 200; 
+    private boolean isBossStage = false, gameOver = false, isPaused = false;
+
+    private boolean upPressed, downPressed, leftPressed, rightPressed, spacePressed;
+    private int shootCooldown = 0;
+
+    private Rectangle resumeBtn  = new Rectangle(WIDTH / 2 - 70, HEIGHT / 2 - 60, 140, 40);
+    private Rectangle restartBtn = new Rectangle(WIDTH / 2 - 70, HEIGHT / 2,      140, 40);
+    private Rectangle exitBtn    = new Rectangle(WIDTH / 2 - 70, HEIGHT / 2 + 60, 140, 40);
+
+    public AirplaneGame() {
+        setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        setBackground(new Color(5, 5, 25));
+        setFocusable(true);
+        addKeyListener(this);
+        addMouseListener(this);
+        initGame();
+        timer = new Timer(50, this); 
+        timer.start();
+    }
+
+    private void initGame() {
+        score = 0; wave = 1; level = 1; isBossStage = false; gameOver = false; isPaused = false;
+        enemies.clear(); playerBullets.clear(); enemyBullets.clear(); effects.clear();
+        map = new int[ROWS][COLS];
+        Random rand = new Random();
+        for (int i = 0; i < 15; i++) {
+            int r = rand.nextInt(ROWS - 8) + 4;
+            int c = rand.nextInt(COLS);
+            if(r != ROWS - 2 || c != COLS / 2) map[r][c] = 1;
+        }
+        player = new Player(ROWS - 2, COLS / 2);
+        startNewWave();
+    }
+
+    private void startNewWave() {
+        waveTimerCounter = 0; isBossStage = false;
+        for (int i = 0; i < 3; i++) enemies.add(new Enemy(0, new Random().nextInt(COLS), false, 1));
+    }
+
+    private void spawnBoss() {
+        isBossStage = true; waveTimerCounter = 0;
+        enemies.add(new Enemy(0, COLS / 2, true, 3 + level));
+    }
+
+    private void playerHit() {
+        if (player.invincibleTimer <= 0) {
+            player.hp--;
+            player.invincibleTimer = 10;
+            if (player.hp <= 0) gameOver = true;
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (gameOver || isPaused) return;
+
+        if (player.invincibleTimer > 0) player.invincibleTimer--;
+
+        // 更新死亡特效計時
+        Iterator<DeathEffect> effIter = effects.iterator();
+        while (effIter.hasNext()) {
+            DeathEffect eff = effIter.next();
+            eff.life--;
+            if (eff.life <= 0) effIter.remove();
+        }
+
+        if (!isBossStage) {
+            if (++waveTimerCounter >= NEXT_WAVE_TIME || enemies.isEmpty()) {
+                if (!enemies.isEmpty()) for (Enemy en : enemies) en.isRetreating = true;
+                if (enemies.isEmpty() || allEnemiesOffScreen()) {
+                    score += 100 + (level * 50);
+                    enemies.clear();
+                    if (wave < 5) { wave++; startNewWave(); } else spawnBoss();
+                }
+            }
+        } else if (enemies.isEmpty()) {
+            score += 100 + (level * 50); level++; wave = 1; startNewWave();
+        }
+
+        updatePlayerAction();
+        updatePlayerBullets();
+        
+        Iterator<Enemy> eIter = enemies.iterator();
+        while (eIter.hasNext()) {
+            Enemy en = eIter.next();
+            en.update(player.row, player.col, map, enemyBullets);
+            if (en.row == player.row && en.col == player.col) playerHit();
+            if (en.isRetreating && en.row >= ROWS) eIter.remove();
+        }
+
+        updateEnemyBullets();
+        repaint();
+    }
+
+    private boolean allEnemiesOffScreen() {
+        for (Enemy en : enemies) if (en.row < ROWS) return false;
+        return true;
+    }
+
+    private void updatePlayerAction() {
+        int nextR = player.row, nextC = player.col;
+        if (upPressed) nextR--; if (downPressed) nextR++;
+        if (leftPressed) nextC--; if (rightPressed) nextC++;
+        if (nextR >= 0 && nextR < ROWS && nextC >= 0 && nextC < COLS && map[nextR][nextC] == 0) {
+            player.row = nextR; player.col = nextC;
+        }
+        if (shootCooldown > 0) shootCooldown--;
+        if (spacePressed && shootCooldown == 0) {
+            playerBullets.add(new Bullet(player.row - 1, player.col, 0));
+            playerBullets.add(new Bullet(player.row - 1, player.col, -1));
+            playerBullets.add(new Bullet(player.row - 1, player.col, 1));
+            shootCooldown = 2;
+        }
+    }
+
+    private void updatePlayerBullets() {
+        Iterator<Bullet> bIter = playerBullets.iterator();
+        while (bIter.hasNext()) {
+            Bullet b = bIter.next(); b.move();
+            if (b.row < 0 || b.col < 0 || b.col >= COLS) { bIter.remove(); continue; }
+            for (int i = 0; i < enemies.size(); i++) {
+                Enemy en = enemies.get(i);
+                if (!en.isRetreating && b.row == en.row && b.col == en.col) {
+                    en.hp--; bIter.remove();
+                    if (en.hp <= 0) {
+                        // 生成死亡特效
+                        effects.add(new DeathEffect(en.row, en.col, en.isBoss));
+                        enemies.remove(i); 
+                        score += en.isBoss ? 1000 : 100; 
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private void updateEnemyBullets() {
+        Iterator<EnemyBullet> ebIter = enemyBullets.iterator();
+        while (ebIter.hasNext()) {
+            EnemyBullet eb = ebIter.next(); eb.move();
+            if (eb.curR < 0 || eb.curR >= ROWS || eb.curC < 0 || eb.curC >= COLS) { ebIter.remove(); continue; }
+            if ((int)eb.curR == player.row && (int)eb.curC == player.col) {
+                playerHit(); ebIter.remove();
+            }
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(new Color(60, 60, 80));
+        for(int r=0;r<ROWS;r++) for(int c=0;c<COLS;c++) if(map[r][c]==1) g2.fillOval(c*40+6, r*40+6, 28, 28);
+        
+        player.draw(g2);
+        for (Enemy e : enemies) e.draw(g2);
+        for (Bullet b : playerBullets) b.draw(g2);
+        for (EnemyBullet eb : enemyBullets) eb.draw(g2);
+        for (DeathEffect eff : effects) eff.draw(g2); // 繪製特效
+
+        g2.setColor(Color.WHITE); g2.setFont(new Font("Microsoft JhengHei", Font.BOLD, 18));
+        g2.drawString(String.format("關數: %d  波次: %s  得分: %d  生命: %d", level, isBossStage ? "BOSS" : wave + "/5", score, player.hp), 10, 25);
+        
+        if (isPaused && !gameOver) {
+            g2.setColor(new Color(0, 0, 0, 180)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+            g2.setColor(Color.YELLOW); g2.setFont(new Font("Arial", Font.BOLD, 42));
+            drawCenterString(g2, "PAUSED", HEIGHT / 2 - 100);
+            g2.setFont(new Font("Microsoft JhengHei", Font.BOLD, 18));
+            drawStyledButton(g2, resumeBtn, "繼續遊戲", Color.WHITE, Color.BLACK);
+            drawStyledButton(g2, restartBtn, "重新開始", Color.CYAN, Color.BLACK);
+            drawStyledButton(g2, exitBtn, "結束遊戲", new Color(255, 80, 80), Color.WHITE);
+        }
+
+        if (gameOver) {
+            g2.setColor(new Color(150, 0, 0, 200)); g2.fillRect(0, 0, WIDTH, HEIGHT);
+            g2.setColor(Color.WHITE); g2.setFont(new Font("Microsoft JhengHei", Font.BOLD, 40));
+            drawCenterString(g2, "遊戲結束", HEIGHT / 2 - 20);
+            drawStyledButton(g2, restartBtn, "重新開始 (R)", Color.WHITE, Color.BLACK);
+        }
+    }
+
+    private void drawStyledButton(Graphics2D g2, Rectangle rect, String text, Color bg, Color fg) {
+        g2.setColor(bg); g2.fill(rect);
+        g2.setColor(fg);
+        FontMetrics fm = g2.getFontMetrics();
+        int tx = rect.x + (rect.width - fm.stringWidth(text)) / 2;
+        int ty = rect.y + (rect.height - fm.getHeight()) / 2 + fm.getAscent();
+        g2.drawString(text, tx, ty);
+    }
+
+    private void drawCenterString(Graphics2D g2, String s, int y) {
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(s, (WIDTH - fm.stringWidth(s)) / 2, y);
+    }
+
+    // --- 內部類別：死亡特效 ---
+    class DeathEffect {
+        int r, c, life = 6; // 6幀 * 50ms = 0.3秒
+        boolean isBoss;
+        DeathEffect(int r, int c, boolean isBoss) { this.r = r; this.c = c; this.isBoss = isBoss; }
+        void draw(Graphics2D g) {
+            // 閃爍效果：間隔幀不畫
+            if (life % 2 == 0) return;
+            g.setColor(Color.YELLOW);
+            int size = isBoss ? 36 : 20;
+            int offset = (40 - size) / 2;
+            g.drawOval(c * 40 + offset, r * 40 + offset, size, size);
+            g.setStroke(new BasicStroke(2));
+            g.drawOval(c * 40 + offset - 2, r * 40 + offset - 2, size + 4, size + 4);
+        }
+    }
+
+    class Player {
+        int row, col, hp = 5, invincibleTimer = 0;
+        Player(int r, int c) { this.row = r; this.col = c; }
+        void draw(Graphics2D g) {
+            if (invincibleTimer > 0 && invincibleTimer % 2 == 0) g.setColor(new Color(255, 0, 0, 150));
+            else g.setColor(new Color(0, 255, 255));
+            g.fillPolygon(new int[]{col*40+20, col*40+5, col*40+35}, new int[]{row*40+5, row*40+35, row*40+35}, 3);
+        }
+    }
+
+    class EnemyBullet {
+        double curR, curC, dr, dc;
+        final double SPEED = 0.35;
+        EnemyBullet(int sr, int sc, int tr, int tc) {
+            this.curR = sr; this.curC = sc;
+            double dR = tr - sr, dC = tc - sc;
+            double dist = Math.sqrt(dR*dR + dC*dC);
+            this.dr = (dR/dist)*SPEED; this.dc = (dC/dist)*SPEED;
+        }
+        void move() { curR += dr; curC += dc; }
+        void draw(Graphics2D g) { g.setColor(new Color(255, 100, 100)); g.fillOval((int)(curC*40+15), (int)(curR*40+15), 10, 10); }
+    }
+
+    class Enemy {
+        int row, col, hp; boolean isBoss, isRetreating = false;
+        private int moveCounter = 0, attackCounter = 0;
+        Enemy(int r, int c, boolean ib, int h) { this.row = r; this.col = c; this.isBoss = ib; this.hp = h; }
+        void update(int pR, int pC, int[][] grid, List<EnemyBullet> ebList) {
+            if (isRetreating) { if (++moveCounter >= 2) { row++; moveCounter = 0; } return; }
+            if (++moveCounter >= (isBoss ? 12 : 10)) { moveBFS(pR, pC, grid); moveCounter = 0; }
+            if (++attackCounter >= (isBoss ? 25 : 60)) {
+                ebList.add(new EnemyBullet(row, col, pR, pC)); attackCounter = 0;
+            }
+        }
+        private void moveBFS(int tR, int tC, int[][] grid) {
+            Queue<Node> q = new LinkedList<>(); boolean[][] v = new boolean[ROWS][COLS];
+            q.add(new Node(row, col, null)); v[row][col] = true;
+            Node target = null; int[] dr={-1,1,0,0}, dc={0,0,-1,1};
+            while(!q.isEmpty()){
+                Node curr=q.poll(); if(curr.row==tR && curr.col==tC){target=curr; break;}
+                for(int i=0;i<4;i++){
+                    int nr=curr.row+dr[i], nc=curr.col+dc[i];
+                    if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && !v[nr][nc] && grid[nr][nc]==0){
+                        v[nr][nc]=true; q.add(new Node(nr, nc, curr));
+                    }
+                }
+            }
+            if(target != null){
+                List<Node> path = new ArrayList<>();
+                while(target != null){ path.add(target); target = target.parent; }
+                if(path.size()>1){ Collections.reverse(path); this.row=path.get(1).row; this.col=path.get(1).col; }
+            }
+        }
+        void draw(Graphics2D g) {
+            if (isBoss) {
+                g.setColor(new Color(200, 0, 255)); g.fillRect(col*40+2, row*40+2, 36, 36);
+                g.setColor(Color.WHITE); g.drawString("HP:"+hp, col*40+5, row*40-5);
+            } else {
+                g.setColor(isRetreating ? Color.DARK_GRAY : new Color(255, 60, 60));
+                g.fillRect(col*40+10, row*40+10, 20, 20);
+            }
+        }
+    }
+
+    class Bullet {
+        int row, col, dx;
+        Bullet(int r, int c, int dx) { this.row = r; this.col = c; this.dx = dx; }
+        void move() { row--; col += dx; }
+        void draw(Graphics2D g) { g.setColor(Color.YELLOW); g.fillRect(col*40+18, row*40+10, 4, 12); }
+    }
+    class Node { int row, col; Node parent; Node(int r, int c, Node p) { this.row = r; this.col = c; this.parent = p; } }
+
+    public void keyPressed(KeyEvent e) {
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_ESCAPE || k == KeyEvent.VK_P) isPaused = !isPaused;
+        if (gameOver && k == KeyEvent.VK_R) initGame();
+        if (gameOver || isPaused) return;
+        if (k == KeyEvent.VK_W || k == KeyEvent.VK_UP) upPressed = true;
+        if (k == KeyEvent.VK_S || k == KeyEvent.VK_DOWN) downPressed = true;
+        if (k == KeyEvent.VK_A || k == KeyEvent.VK_LEFT) leftPressed = true;
+        if (k == KeyEvent.VK_D || k == KeyEvent.VK_RIGHT) rightPressed = true;
+        if (k == KeyEvent.VK_SPACE) spacePressed = true;
+    }
+    public void keyReleased(KeyEvent e) {
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_W || k == KeyEvent.VK_UP) upPressed = false;
+        if (k == KeyEvent.VK_S || k == KeyEvent.VK_DOWN) downPressed = false;
+        if (k == KeyEvent.VK_A || k == KeyEvent.VK_LEFT) leftPressed = false;
+        if (k == KeyEvent.VK_D || k == KeyEvent.VK_RIGHT) rightPressed = false;
+        if (k == KeyEvent.VK_SPACE) spacePressed = false;
+    }
+    public void mousePressed(MouseEvent e) {
+        Point p = e.getPoint();
+        if ((isPaused && !gameOver) || gameOver) {
+            if (restartBtn.contains(p)) initGame();
+            else if (isPaused && resumeBtn.contains(p)) isPaused = false;
+            else if (isPaused && exitBtn.contains(p)) System.exit(0);
+            repaint();
+        }
+    }
+    public void keyTyped(KeyEvent e) {}
+    public void mouseClicked(MouseEvent e) {}
+    public void mouseReleased(MouseEvent e) {}
+    public void mouseEntered(MouseEvent e) {}
+    public void mouseExited(MouseEvent e) {}
+    
+    public static void main(String[] args) {
+        JFrame f = new JFrame("AI Shooter - Death Effects");
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.add(new AirplaneGame()); f.pack(); f.setLocationRelativeTo(null); f.setResizable(false); f.setVisible(true);
+    }
+}
